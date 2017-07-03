@@ -387,7 +387,7 @@ export default class Home extends React.Component {
           <Container>
             <Header style={appBar}>
               <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
-              <Text style={titleStyle}>CapThis</Text>
+              <Text style={titleStyle}> CapThis </Text>
             </Header>
             <FlatList
               data={this.state.topics}

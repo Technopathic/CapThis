@@ -294,7 +294,7 @@ class Followers extends React.Component {
               </Button>
             </Left>
             <Body>
-              <Text style={titleStyle}>Followers</Text>
+              <Text style={titleStyle}> Followers </Text>
             </Body>
           </Header>
           <Content>

@@ -268,7 +268,7 @@ class Settings extends React.Component {
               </Button>
             </Left>
             <Body>
-              <Text style={titleStyle}>Settings</Text>
+              <Text style={titleStyle}> Settings </Text>
             </Body>
           </Header>
           <Content>

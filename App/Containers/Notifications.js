@@ -596,7 +596,7 @@ class Notifications extends React.Component {
                 <Icon name='chevron-left' size={35} style={{color:'#EEEEEE'}} />
               </Button>
             </Left>
-            <Text style={titleStyle}>Notifications</Text>
+            <Text style={titleStyle}> Notifications </Text>
             <Right></Right>
           </Header>
           {this.renderTabs()}

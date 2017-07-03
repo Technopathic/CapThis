@@ -739,7 +739,7 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
           <Header style={appBar}>
             <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
             {this.renderProfileOptions()}
-            <Text style={titleStyle}>{this.state.profile.profile.profileName}</Text>
+            <Text style={titleStyle}> {this.state.profile.profile.profileName} </Text>
             <Right style={{flex:1, flexDirection:'column'}}>
               <Button transparent onPress={() => ActionSheet.show(
                 {

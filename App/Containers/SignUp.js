@@ -218,7 +218,7 @@ class SignUp extends React.Component {
       <Container>
           <Header style={appBar}>
             <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
-            <Text style={titleStyle}>Sign Up</Text>
+            <Text style={titleStyle}> Sign Up </Text>
           </Header>
           <Content>
             <View style={backgroundContainer}>

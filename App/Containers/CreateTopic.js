@@ -410,7 +410,7 @@ class CreateTopic extends React.Component {
       <ScrollView>
         <Header style={appBar}>
           <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
-          <Text style={titleStyle}>New Topic</Text>
+          <Text style={titleStyle}> New Topic </Text>
         </Header>
         <Content style={contentStyle}>
           {this.renderImageButtons()}

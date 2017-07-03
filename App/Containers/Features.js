@@ -469,7 +469,7 @@ class Features extends React.Component {
         <Container>
           <Header style={appBar}>
             <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
-            <Text style={titleStyle}>Feed</Text>
+            <Text style={titleStyle}> Feed </Text>
           </Header>
           {this.renderSuggests()}
           <FlatList

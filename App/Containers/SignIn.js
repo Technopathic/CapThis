@@ -353,7 +353,7 @@ class SignIn extends React.Component {
       <ScrollView>
         <Header style={appBar}>
           <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
-          <Text style={titleStyle}>Sign In</Text>
+          <Text style={titleStyle}> Sign In </Text>
         </Header>
         <View style={backgroundContainer}>
           <Image style={logoContainer} source={require('../Images/CapThisLogo.png')} />

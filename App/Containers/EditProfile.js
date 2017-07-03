@@ -272,7 +272,7 @@ class EditProfile extends React.Component {
               </Button>
             </Left>
             <Body>
-              <Text style={titleStyle}>Edit Profile</Text>
+              <Text style={titleStyle}> Edit Profile </Text>
             </Body>
           </Header>
           <View style={profileHead}>
