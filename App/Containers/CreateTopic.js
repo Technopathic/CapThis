@@ -1,9 +1,9 @@
 // @flow
 
 import React from 'react'
-import { View, ScrollView, StatusBar, Text, AsyncStorage, TextInput, TouchableOpacity, Image } from 'react-native'
+import { View, ScrollView, StatusBar, Text, AsyncStorage, TextInput, TouchableOpacity, Image, Dimensions } from 'react-native'
 import Autocomplete from 'react-native-autocomplete-input'
-import { Container, Header, Content, InputGroup, List, ListItem, Button, Toast} from 'native-base';
+import { Container, Header, Content, InputGroup, List, ListItem, Button, Toast, Spinner} from 'native-base';
 import { Actions as NavigationActions } from 'react-native-router-flux';
 import ImagePicker from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -17,15 +17,13 @@ class CreateTopic extends React.Component {
    this.state = {
      token:"",
      autoTags:[],
-     autoMentions:[],
      tags:"",
-     mentions:"",
      topicTags:[],
-     topicMentions:[],
      topicImg:"",
      previewImg:null,
      disableSubmit: false,
-     showToast: false
+     showToast: false,
+     isLoading:false
    };
  };
 
@@ -57,20 +55,6 @@ class CreateTopic extends React.Component {
           autoTags: json
         })
       }.bind(this));
-
-      fetch('http://capthis.technopathic.me/api/getUsers?token=' + this.state.token, {
-        headers:{
-          'Authorization': 'Bearer ' + this.state.token
-        }
-      })
-       .then(function(response) {
-         return response.json()
-       })
-       .then(function(json) {
-         this.setState({
-           autoMentions: json
-         })
-       }.bind(this));
     })
   };
 
@@ -133,46 +117,6 @@ class CreateTopic extends React.Component {
     this.topicTags = this.state.topicTags;
     this.topicTags.splice(index, 1);
     this.setState({topicTags: this.topicTags});
-  };
-
-  handleTopicMentions = (event) => {
-   this.setState({
-     mentions: event.nativeEvent.text
-   })
-  };
-
-  setTopicMentions = (chosenRequest) => {
-    var mentions = this.state.topicMentions;
-    var mention = null;
-    if(chosenRequest.id)
-    {
-      var mention = chosenRequest;
-      mentions.push(mention);
-      this.setState({
-        topicMentions:mentions,
-        mentions:""
-      });
-    }
-    else {
-      _this.showToast('User not found.');
-    }
-  };
-
-  findMentions(query) {
-    if (query === '') {
-     return [];
-    }
-
-    const { autoMentions } = this.state;
-    const regex = new RegExp(`${query.trim()}`, 'i');
-    return autoMentions.filter(mention => mention.name.search(regex) >= 0);
-  };
-
-  handleMentionDelete = (index) => {
-    this.topicMentions = this.state.topicMentions;
-    const chipToDelete = this.topicMentions.map((chip) => chip.id).indexOf(index);
-    this.topicMentions.splice(chipToDelete, 1);
-    this.setState({topicMentions: this.topicMentions});
   };
 
   handleImage = () => {
@@ -238,7 +182,10 @@ class CreateTopic extends React.Component {
     var data = new FormData();
     data.append('topicImg', this.state.topicImg);
     data.append('topicTags', JSON.stringify(this.state.topicTags));
-    data.append('topicMentions', JSON.stringify(this.state.topicMentions));
+
+    this.setState({
+      isLoading:true
+    })
 
     fetch('http://capthis.technopathic.me/api/storeTopic?token=' + this.state.token, {
       method: 'POST',
@@ -252,51 +199,47 @@ class CreateTopic extends React.Component {
     .then(function(json) {
       if(json.error)
       {
-        _this.showToast('There was a problem posting this.');
+        _this.showToast(json.error);
       }
       else {
-        if(json === 0)
-        {
-          _this.showToast('You cannot make an empty post.');
-        }
-        else if(json === 2)
-        {
-          _this.showToast('You do not have permission.');
-        }
-        else if(json === 3)
-        {
-          _this.showToast('You can only have 3 mentions.');
-        }
-        else if(json === 4)
-        {
-          _this.showToast('Your post is too long.');
-        }
-        else if(json === 5)
-        {
-          _this.showToast('Your image is too big.');
-        }
-        else if(json === 6)
-        {
-          _this.showToast('Not a valid PNG/JPG/GIF image.');
-        }
-        else if(json === 7)
-        {
-          _this.showToast('You can only have 10 tags.');
-        }
-        else if(json === 8)
-        {
-          _this.showToast("Slow down, you've already posted in the last 2minutes");
-        }
-        else {
-          _this.setState({
-            disableSubmit:true
-          })
-          _this.showToast('Topic Added!.');
-          setTimeout(function(){NavigationActions.root({refresh: {index:0}})}, 3000);
-        }
+        _this.setState({
+          disableSubmit:true,
+          topicImg:"",
+          previewImg:null,
+          topicTags:[],
+          isLoading:false
+        })
+        _this.showToast('Topic Added!');
+        setTimeout(function(){NavigationActions.root({refresh: {index:0}})}, 3000);
       }
     }.bind(this));
   };
+
+  renderIsLoading = () => {
+
+    const loadingStyle = {
+      flex:1,
+      width:Dimensions.get('window').width,
+      height:Dimensions.get('window').height,
+      paddingTop:15,
+      paddingBottom:15,
+      backgroundColor:"rgba(0, 0, 0, 0.3)",
+      justifyContent:'center',
+      alignItems:'center',
+      position:'absolute',
+      zIndex:99999
+    }
+
+    if(this.state.isLoading === true)
+    {
+      return(
+        <View style={loadingStyle}>
+          <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
+          <Spinner color='#ffbe39'/>
+        </View>
+      )
+    }
+  }
 
   render () {
 
@@ -344,7 +287,8 @@ class CreateTopic extends React.Component {
       backgroundColor:'transparent',
       borderWidth:0,
       margin:0,
-      marginBottom:0,
+      marginTop:10,
+      marginBottom:10,
     };
 
     const autoStyle = {
@@ -402,12 +346,11 @@ class CreateTopic extends React.Component {
 
     const { tags } = this.state;
     const autoTags = this.findTags(tags);
-    const { mentions } = this.state;
-    const autoMentions = this.findMentions(mentions);
     const comp = (s, s2) => s.toLowerCase().trim() === s2.toLowerCase().trim();
 
     return (
       <ScrollView>
+        {this.renderIsLoading()}
         <Header style={appBar}>
           <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
           <Text style={titleStyle}> New Topic </Text>
