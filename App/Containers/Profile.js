@@ -1,11 +1,12 @@
 // @flow
 
 import React from 'react'
-import { ScrollView, StatusBar, AsyncStorage, View, Image, Modal, Dimensions, TouchableHighlight, FlatList } from 'react-native'
+import { ScrollView, StatusBar, AsyncStorage, View, Image, Dimensions, TouchableHighlight, Modal, Share, FlatList } from 'react-native'
 import { Actions as NavigationActions } from 'react-native-router-flux'
 
-import { Container, Header, Content, Card, CardItem, Thumbnail, List, ListItem, Text, Button, Right, Left, Body, ActionSheet, Toast, Spinner } from 'native-base'
+import { Container, Header, Content, Card, CardItem, Thumbnail, List, ListItem, Text, Button, Right, Left, Body, ActionSheet, Toast, Spinner, Badge } from 'native-base'
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import MIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Styles
 import Styles from './Styles/ProfileStyle'
@@ -24,6 +25,7 @@ class Profile extends React.Component {
      isProfileLoading:true,
      isTopicsLoading:true,
      isRepliesLoading:true,
+     isNotifsLoading:true,
      showToast:false,
      nextPage:1,
      currentPage:0,
@@ -33,6 +35,8 @@ class Profile extends React.Component {
      lastReplyPage:1,
      follow:"",
      activeTab:0,
+     imageOpen:false,
+     activeImage:""
    };
  };
 
@@ -46,6 +50,7 @@ class Profile extends React.Component {
  };
 
 showReport(visible) { this.setState({ reportOpen: visible}); }
+showImage = (visible, image) => { this.setState({ imageOpen: visible, activeImage: image}); }
 
  async componentWillMount() {
    await AsyncStorage.multiGet(["token", "user"], (err, stores) => {
@@ -58,6 +63,7 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
   })
   .then(() => {
      this.getProfile();
+     this.getNotifs();
      this.getTopics();
      this.getReplies();
    })
@@ -83,6 +89,30 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
          profile: json,
          follow:json.follow,
          isProfileLoading:false
+       })
+     }
+   }.bind(this))
+ };
+
+ getNotifs = () => {
+   fetch('http://capthis.technopathic.me/api/getNotifCount?token='+this.state.token, {
+     headers:{
+       'Authorization': 'Bearer ' + this.state.token
+     }
+   })
+   .then(function(response) {
+     return response.json()
+   })
+   .catch((error) => console.warn("fetch error:", error))
+   .then(function(json) {
+     if(json.error === "token_not_provided")
+     {
+        //NavigationActions.signin();
+     }
+     else {
+       this.setState({
+         notifs: json,
+         isNotifsLoading:false
        })
      }
    }.bind(this))
@@ -131,7 +161,7 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
    var replies = this.state.replies;
    if(this.state.currentReplyPage !== this.state.lastReplyPage)
    {
-     fetch('http://capthis.technopathic.me/api/profileReplies/'+this.props.id+'?page='+this.state.nextReplyPage+'&token='+this.state.token, {
+     fetch('http://capthis.technopathic.me/api/profileReplies/'+this.props.uid+'?page='+this.state.nextReplyPage+'&token='+this.state.token, {
        headers:{
          'Authorization': 'Bearer ' + this.state.token
        }
@@ -379,10 +409,16 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
 
     if(this.state.user.user.id === this.props.uid)
     {
+      var showNotif = <Badge style={{backgroundColor:'#ffbe39', marginLeft:-10, marginTop:3}}><Text>{this.state.notifs}</Text></Badge>;
+      if(this.state.notifs === 0)
+      {
+        showNotif = <Text> </Text>;
+      }
       return(
         <Left style={leftNav}>
           <Button transparent onPress={() => NavigationActions.notifications()}>
             <Icon name='notifications' size={25} style={{color:'#EEEEEE'}} />
+            {showNotif}
           </Button>
         </Left>
       );
@@ -406,7 +442,7 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
       backgroundColor:'#ffbe39'
     };
 
-    if(this.state.lastPage !== this.state.currentPage)
+    if(this.state.lastPage !== this.state.currentPage && this.state.lastPage !== 0)
     {
       return(
         <Button block style={buttonStyleOne} onPress={() => this.getTopics()}><Text>Load More</Text></Button>
@@ -422,7 +458,7 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
       backgroundColor:'#ffbe39'
     };
 
-    if(this.state.lastReplyPage !== this.state.currentReplyPage)
+    if(this.state.lastReplyPage !== this.state.currentReplyPage && this.state.lastReplyPage !== 0)
     {
       return(
         <Button block style={buttonStyleOne} onPress={() => this.getReplies()}><Text>Load More</Text></Button>
@@ -443,6 +479,129 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
     this.setState({
       activeTab:id
     })
+  }
+
+  voteTopic(id, dir) {
+    var topics = this.state.topics;
+
+    fetch('http://capthis.technopathic.me/api/voteTopic/'+id+'?token=' + this.state.token, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + this.state.token
+      },
+      body: JSON.stringify({
+        dir: dir
+      })
+    }).then(function(response) {
+        return response.json()
+    })
+    .then(function(voteRes) {
+      if(voteRes === 1)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 1;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) + 1;
+          }
+        }
+      } else if(voteRes === 2)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 0;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) - 1;
+          }
+        }
+      } else if(voteRes === 3)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 2;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) - 1;
+          }
+        }
+      } else if(voteRes === 4)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 0;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) + 1;
+          }
+        }
+      }
+      this.setState({topics:topics})
+    }.bind(this));
+  };
+
+  setVote(topic)
+  {
+    const activeStyle = {
+      backgroundColor:"#ffbe39"
+    };
+
+    const optionStyle = {
+      flex:1,
+      flexDirection:'row',
+      justifyContent:'space-around',
+      marginTop:3
+    };
+
+    const activeIcon = {
+      fontSize:20,
+      color:'#EEEEEE'
+    };
+
+    const iconStyle = {
+      fontSize:20,
+      color:'#666666'
+    };
+
+    var upVote = <Button transparent onPress={() => this.voteTopic(topic.id, 1)}><Icon name="favorite-border" style={iconStyle}/></Button>;
+    var selectUp = <Button transparent style={activeStyle} onPress={() => this.voteTopic(topic.id, 1)}><Icon name="favorite" style={activeIcon}/></Button>;
+
+    var replies = <Button transparent onPress={() => {NavigationActions.detail({id:topic.id})}}><Icon name="chat-bubble-outline" style={iconStyle}/></Button>;
+    var share = <Button transparent onPress={() => this.shareText(topic)}><Icon name="share" style={iconStyle}/></Button>;
+
+
+    if(topic.vote === 0) {
+      return (
+        <View style={optionStyle}>
+          {upVote}{replies}{share}
+        </View>
+      );
+    } else if(topic.vote === 1) {
+      return (
+        <View style={optionStyle}>
+          {selectUp}{replies}{share}
+        </View>
+      );
+    } else if(topic.vote === 2) {
+      return (
+        <View style={optionStyle}>
+          {upVote}{replies}{share}
+        </View>
+      );
+    }
+  };
+
+  renderCaption = (topic) => {
+    if(topic.caption !== null)
+    {
+      return(
+        <View style={{flex:1, width:Dimensions.get('window').width, minHeight:40, maxHeight:280, backgroundColor:'rgba(0, 0, 0, 0.5)', alignItems:'center', justifyContent:'center', position:'absolute', bottom:50, borderTopWidth:1, borderBottomWidth:1, borderTopColor:'#ffbe39', borderBottomColor:'#ffbe39'}}>
+          <Text style={{color:'#FFFFFF', padding:5, textAlign:'center'}}>{topic.caption}</Text>
+        </View>
+      )
+    }
   }
 
   renderTabs = () => {
@@ -474,6 +633,73 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
       borderRadius:0
     };
 
+    const cardStyle = {
+      flex: 1,
+      shadowOpacity:0,
+      elevation:0,
+      borderLeftWidth:0,
+      borderRightWidth:0,
+      borderTopWidth:0,
+      borderBottomWidth:1,
+      borderBottomColor:'#EAEAEA',
+      borderRadius:0,
+      marginBottom:0,
+      marginTop:0,
+    };
+
+    const cardHead = {
+      flex:1,
+      flexDirection:'row',
+      paddingLeft:10,
+      paddingRight:10,
+      paddingTop:5,
+    };
+
+    const cardImage = {
+      flex:1,
+      borderBottomWidth:0,
+      borderTopWidth:0,
+      paddingTop:5,
+      paddingBottom:5,
+    };
+
+    const headerStyle = {
+      flex:1,
+      flexDirection:'column',
+      paddingLeft:10
+    };
+
+    const headerText = {
+      marginBottom:0,
+      paddingBottom:0,
+    };
+
+    const itemStyle = {
+      paddingTop:0,
+      paddingBottom:10,
+      paddingLeft:10,
+      paddingRight:10,
+    };
+
+    const smallText = {
+      fontSize:11,
+      color:'#777777',
+      fontFamily:'Montserrat-Regular'
+    };
+
+    const noteText = {
+      fontSize:11,
+      color:'#777777',
+      marginTop:-12
+    };
+
+    const noGutter = {
+      paddingTop:0,
+      paddingBottom:0,
+      marginTop:0,
+      marginBottom:0
+    };
+
     if(this.state.activeTab === 0)
     {
       return(
@@ -482,15 +708,31 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
             <Button style={activeTab} onPress={() => this.changeTab(0)}><Text style={{color:'#FFFFFF', fontWeight:'bold'}}>Topics</Text></Button>
             <Button style={tabStyle} onPress={() => this.changeTab(1)}><Text style={{color:'#FFFFFF'}}>Replies</Text></Button>
           </View>
-          <View style={{ flexDirection:'row', flexWrap:'wrap', justifyContent:'flex-start'}}>
-            {this.state.topics.map((topic, index) => (
-              <TouchableHighlight onPress={() => {NavigationActions.detail({id:topic.id})}} key={index}>
-                <View style={{width:Dimensions.get('window').width * 0.33, height:125, padding:1}}>
-                  <Image style={{flex:1, height:125}} source={{uri:topic.topicThumbnail}} />
+          {this.state.topics.map((topic, index) => (
+            <View style={cardStyle} key={index}>
+              <View style={cardHead}>
+                <Thumbnail source={{uri:topic.avatar}} small onPress={() => {NavigationActions.profile({uid:topic.userID})}}/>
+                <View style={headerStyle}>
+                  <Text style={{fontSize:14, fontFamily:'Montserrat-Regular'}} onPress={() => {NavigationActions.profile({uid:topic.userID})}}>{topic.profileName}</Text>
+                  <Text note style={{fontSize:11, fontFamily:'Montserrat-Regular'}} onPress={() => {NavigationActions.profile({uid:topic.userID})}}>{topic.topicDate}</Text>
+                </View>
+              </View>
+              <TouchableHighlight onPress={() => {this.showImage(true, topic.topicImg)}}>
+                <View style={cardImage}>
+                  <Image style={{ flex:1, width:Dimensions.get('window').width, height:300 }} resizeMode='cover' source={{uri:topic.topicThumbnail}}/>
+                  {this.renderCaption(topic)}
                 </View>
               </TouchableHighlight>
-            ))}
-          </View>
+              <View style={{paddingLeft:10, paddingRight:10}}>
+                <Text style={smallText} onPress={() => {NavigationActions.detail({id:topic.id})}}>
+                  {topic.topicVotes} Likes &middot; {topic.topicReplies} Replies
+                </Text>
+              </View>
+              <View style={noGutter}>
+                {this.setVote(topic)}
+              </View>
+            </View>
+          ))}
           {this.renderLoadTopics()}
         </View>
       )
@@ -522,6 +764,35 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
       )
     }
   }
+
+  shareText = (topic) => {
+    Share.share({
+      message: topic.caption + ":: See more on the CapThis app!",
+      url: topic.topicImg,
+      title: 'CapThis'
+    }, {
+      dialogTitle: 'Share this Topic',
+      excludedActivityTypes: [
+        'com.apple.UIKit.activity.PostToTwitter'
+      ],
+      tintColor: 'green'
+    })
+    .then(this.showResult)
+    .catch((error) => this.setState({result: 'error: ' + error.message}));
+  };
+
+  showResult = (result) => {
+     if (result.action === Share.sharedAction) {
+       if (result.activityType) {
+         this.setState({result: 'shared with an activityType: ' + result.activityType});
+       } else {
+         this.setState({result: 'shared'});
+       }
+     } else if (result.action === Share.dismissedAction) {
+       this.setState({result: 'dismissed'});
+     }
+   };
+
 
   render () {
 
@@ -717,7 +988,7 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
       alignItems:'center'
     };
 
-    if (this.state.isProfileLoading || this.state.isTopicsLoading || this.state.isRepliesLoading ) {
+    if (this.state.isProfileLoading || this.state.isTopicsLoading || this.state.isRepliesLoading || this.state.isNotifsLoading) {
       return (
         <View style={spinnerStyle}>
           <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
@@ -767,10 +1038,12 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
             <View style={profileRight}>
               <View style={profileStats}>
                 <View style={profileFollow}>
-                  <View style={followBox}>
-                    <Text style={statNum}>{this.state.profile.profile.profileTopics}</Text>
-                    <Text style={statTitle}>Topics</Text>
-                  </View>
+                  <TouchableHighlight underlayColor='#FFFFFF'>
+                    <View style={followBox}>
+                      <Text style={statNum}>{this.state.profile.profile.profileTopics}</Text>
+                      <Text style={statTitle}>Topics</Text>
+                    </View>
+                  </TouchableHighlight>
                   <TouchableHighlight onPress={() => NavigationActions.followers({id:this.state.profile.user.id})} underlayColor='#FFFFFF'>
                     <View style={followBox}>
                       <Text style={statNum}>{this.state.profile.profile.profileFollowers}</Text>
@@ -801,6 +1074,11 @@ showReport(visible) { this.setState({ reportOpen: visible}); }
               <Button block style={buttonStyleOne} onPress={() => this.reportProfile()}><Text>Confirm</Text></Button>
               <Button block style={buttonStyleTwo} textStyle={textStyleTwo} onPress={() => { this.showReport(!this.state.reportOpen)}}><Text>Cancel</Text></Button>
             </View>
+          </Modal>
+          <Modal animationType={"slide"} transparent={false} visible={this.state.imageOpen}  onRequestClose={() => {}}>
+            <TouchableHighlight style={{flex:1, minWidth:Dimensions.get('window').width, minHeight:Dimensions.get('window').height}} onPress={() => {this.showImage(false,"")}}>
+              <Image style={{ flex:1, minWidth:Dimensions.get('window').width }} resizeMode='cover' source={{uri:this.state.activeImage}}/>
+            </TouchableHighlight>
           </Modal>
         </ScrollView>
       )

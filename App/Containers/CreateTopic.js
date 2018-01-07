@@ -92,7 +92,7 @@ class CreateTopic extends React.Component {
     }
     if(dup === true)
     {
-      _this.showToast('You cannot add this tag again.');
+      this.showToast('You cannot add this tag again.');
     }
     else {
       tags.push(tag);
@@ -130,10 +130,12 @@ class CreateTopic extends React.Component {
 
     ImagePicker.showImagePicker(options, (response) => {
       let source = { uri: response.uri };
-      this.setState({
-        topicImg: response.data,
-        previewImg: 'data:image/jpeg;base64,' + response.data
-      });
+      if(response.data !== undefined) {
+        this.setState({
+          topicImg: response.data,
+          previewImg: 'data:image/jpeg;base64,' + response.data
+        });
+      }
     });
   };
 
@@ -210,7 +212,7 @@ class CreateTopic extends React.Component {
           isLoading:false
         })
         _this.showToast('Topic Added!');
-        setTimeout(function(){NavigationActions.root({refresh: {index:0}})}, 3000);
+        setTimeout(function(){NavigationActions.root({refresh: {index:0}})}, 2000);
       }
     }.bind(this));
   };
@@ -219,10 +221,8 @@ class CreateTopic extends React.Component {
 
     const loadingStyle = {
       flex:1,
-      width:Dimensions.get('window').width,
-      height:Dimensions.get('window').height,
-      paddingTop:15,
-      paddingBottom:15,
+      padding:15,
+      borderRadius:5,
       backgroundColor:"rgba(0, 0, 0, 0.3)",
       justifyContent:'center',
       alignItems:'center',

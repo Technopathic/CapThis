@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import { Scene, Router } from 'react-native-router-flux'
 
 import SignIn from '../Containers/SignIn'
-import SignUp from '../Containers/SignUp'
 import Root from '../Containers/RootContainer'
 import Detail from '../Containers/Detail'
 import EditProfile from '../Containers/EditProfile'
@@ -26,7 +25,6 @@ class NavigationRouter extends Component {
         <Scene key='settings' component={Settings} title='Settings' hideNavBar={true}/>
 
         <Scene key='signin' component={SignIn} title='Sign In' hideNavBar={true}/>
-        <Scene key='signup' component={SignUp} title='Sign Up' hideNavBar={true}/>
       </Router>
     )
   }

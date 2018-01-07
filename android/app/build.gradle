@@ -90,11 +90,14 @@ android {
         applicationId "com.capthis"
         minSdkVersion 16
         targetSdkVersion 22
-        versionCode 2
-        versionName "2.0"
+        versionCode 7
+        versionName "7.0"
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
+        manifestPlaceholders = [manifestApplicationId: "${applicationId}",
+                                onesignal_app_id: "",
+                                onesignal_google_project_number: ""]
     }
     signingConfigs {
         release {
@@ -137,6 +140,7 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-onesignal')
     compile project(':react-native-image-picker')
     compile project(':react-native-vector-icons')
     compile fileTree(dir: "libs", include: ["*.jar"])

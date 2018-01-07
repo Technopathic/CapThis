@@ -1,10 +1,10 @@
 // @flow
 
 import React from 'react'
-import { View, StatusBar, ScrollView, Text, Image, Modal, AsyncStorage } from 'react-native'
+import { View, StatusBar, ScrollView, Text, Image, AsyncStorage, Dimensions } from 'react-native'
 import { Actions as NavigationActions } from 'react-native-router-flux'
 
-import { Container, Content, Header, InputGroup, Input, List, ListItem, Button, Icon, Toast } from 'native-base';
+import { Container, Content, Header, Button, Toast } from 'native-base';
 import MyCon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { google, facebook, twitter } from 'react-native-simple-auth';
@@ -16,12 +16,8 @@ class SignIn extends React.Component {
   constructor(props) {
    super(props);
    this.state = {
-     email:"",
-     password:"",
-     disableSubmit:false,
-     forgotOpen: false,
-     reset:"",
-     resetModal: false,
+     uuid:"",
+     isLoading:true,
      showToast: false
    };
   };
@@ -35,86 +31,28 @@ class SignIn extends React.Component {
     });
   };
 
-  signIn() {
-    var _this = this;
-    fetch('http://capthis.technopathic.me/api/signIn', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: this.state.email,
-        password: this.state.password
-      })
-    }).then(function(response) {
-      return response.json()
-    })
-    .then(function(json) {
-      if(json == 2) {
-        _this.showToast('Wrong E-mail.');
-      }
-      else if(json == 0) {
-        _this.showToast('Looks like you were banned.');
-      }
-      else if(json.error) {
-        _this.showToast('Wrong Password.');
-      }
-      else if(json.token) {
-        AsyncStorage.setItem('token', json.token);
-        fetch('http://capthis.technopathic.me/api/authenticate/user?token='+ json.token, {
-          headers:{
-            'Authorization': 'Bearer ' + json.token
-          }
-        })
-        .then(function(userResponse) {
-          return userResponse.json()
-        })
-        .then(function(userJson) {
-          _this.setState({disableSubmit:true});
-          AsyncStorage.setItem('user', JSON.stringify(userJson.user));
-          _this.showToast('Hey there, '+userJson.profile.profileName+"!");
-          setTimeout(function(){NavigationActions.root()}, 3000);
-        })
-      }
+  async componentWillMount() {
+    await AsyncStorage.getItem("uuid")
+    .then((value) => {
+      this.setState({
+        uuid: value,
+        isLoading:false
+      });
     })
   };
-
-  resetPassword() {
-    var _this = this;
-    fetch('http://capthis.technopathic.me/api/resetPassword', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: this.state.reset
-      })
-    }).then(function(response) {
-      return response.json()
-    })
-    .then(function(json) {
-      if(json === 1) {
-        _this.showReset(!this.state.resetModal);
-        _this.showToast('A reset E-mail has been sent to you');
-      }
-      else if(json === 2)
-      {
-        _this.showToast('E-mail not found.');
-      }
-    })
-  };
-
-  handleEmail = (event) => this.setState({email: event.nativeEvent.text});
-  handlePassword = (event) => this.setState({password: event.nativeEvent.text});
-  handleReset = (event) => this.setState({reset: event.nativeEvent.text});
-
-  showReset(visible) { this.setState({resetModal: visible}); }
 
   facebookSignIn = () => {
     var _this = this;
     facebook({
-      appId: '616824971822919',
-      callback:'fb616824971822919://authorize'
+      appId: '',
+      callback:'://authorize'
     }).then((info) => {
       fetch('http://capthis.technopathic.me/api/socialSignOn', {
         method: 'POST',
         body: JSON.stringify({
           token: info.credentials.access_token,
-          provider:'Facebook'
+          provider:'Facebook',
+          uuid:this.state.uuid
         })
       }).then(function(response) {
         return response.json()
@@ -150,8 +88,8 @@ class SignIn extends React.Component {
   twitterSignIn = () => {
     var _this = this;
     twitter({
-      appId: 'X6p9wRJwSdY6wXRxkNETuCAzc',
-      appSecret: 'rsD87P2se5XTsY9TWznAeAvHgkTkR9RYnaNqJorUxoRplJy05o',
+      appId: '',
+      appSecret: '',
       callback: 'com.capthis://authorize',
     }).then((info) => {
       fetch('http://capthis.technopathic.me/api/socialSignOn', {
@@ -159,7 +97,8 @@ class SignIn extends React.Component {
         body: JSON.stringify({
           token: info.credentials.oauth_token,
           secret:info.credentials.oauth_token_secret,
-          provider:'Twitter'
+          provider:'Twitter',
+          uuid:this.state.uuid
         })
       }).then(function(response) {
         return response.json()
@@ -195,14 +134,15 @@ class SignIn extends React.Component {
   googleSignIn = () => {
     var _this = this;
     google({
-      appId: '551375746229-tbdiqsc2f8jadh88k573pd9a798qb45r.apps.googleusercontent.com',
+      appId: '',
       callback: 'com.capthis:/oauth2redirect',
     }).then((info) => {
       fetch('http://capthis.technopathic.me/api/socialSignOn', {
         method: 'POST',
         body: JSON.stringify({
           token: info.credentials.access_token,
-          provider:'Google'
+          provider:'Google',
+          uuid:this.state.uuid
         })
       }).then(function(response) {
         return response.json()
@@ -257,10 +197,10 @@ class SignIn extends React.Component {
     const backgroundContainer = {
       flex:1,
       width:null,
-      height:null,
+      height:Dimensions.get('window').height,
       paddingTop:15,
       paddingBottom:15,
-      backgroundColor:'#444444'
+      backgroundColor:'#444444',
     };
 
     const logoContainer = {
@@ -285,31 +225,6 @@ class SignIn extends React.Component {
       borderTopColor:'#888888',
       borderBottomWidth:1,
       borderBottomColor:'#888888'
-    };
-
-    const inputStyle = {
-      color:'#EEEEEE'
-    };
-
-    const iconStyle = {
-      color:'#FFFFFF'
-    };
-
-    const buttonStyleOne = {
-      margin:15,
-      elevation:0,
-      backgroundColor:'#ffbe39'
-    };
-
-    const buttonStyleTwo = {
-      marginLeft:30,
-      marginRight:30,
-      elevation:0,
-      backgroundColor:'#CCCCCC'
-    };
-
-    const textStyleTwo = {
-      color:'#222222'
     };
 
     const facebookButton = {
@@ -358,42 +273,12 @@ class SignIn extends React.Component {
         <View style={backgroundContainer}>
           <Image style={logoContainer} source={require('../Images/CapThisLogo.png')} />
           <Text style={titleContainer}>CapThis</Text>
-
           <View style={inputContainer}>
-            <InputGroup borderType='underline' >
-              <Icon name='md-mail' style={iconStyle}/>
-              <Input style={inputStyle} value={this.state.email} onChange={this.handleEmail} placeholder='E-Mail' placeholderTextColor="#AAAAAA" selectionColor="#ffbe39" underlineColorAndroid="#ffbe39" />
-            </InputGroup>
-
-            <InputGroup>
-              <Icon name='md-lock' style={iconStyle}/>
-              <Input placeholder='Password' secureTextEntry={true} style={inputStyle} value={this.state.password} onChange={this.handlePassword} placeholderTextColor="#AAAAAA" selectionColor="#ffbe39" underlineColorAndroid="#ffbe39" onSubmitEditing={() => this.signIn()}/>
-            </InputGroup>
-
-            <Button block style={buttonStyleOne} disabled={this.state.disalbeSubmit} onPress={() => this.signIn()}><Text style={buttonText}>Sign In</Text></Button>
-            <Button block style={buttonStyleTwo} textStyle={styles.textStyleTwo} onPress={() => {NavigationActions.signup()}}><Text>Sign Up</Text></Button>
+            <Button block style={facebookButton} onPress={() => {this.facebookSignIn()}}><MyCon size={20} color="#EEEEEE" name='facebook' /><Text style={buttonText}> Facebook</Text></Button>
+            <Button block style={twitterButton} onPress={() => {this.twitterSignIn()}}><MyCon size={20} color="#EEEEEE" name='twitter' /><Text style={buttonText}> Twitter</Text></Button>
+            <Button block style={googleButton} onPress={() => {this.googleSignIn()}}><MyCon size={20} color="#EEEEEE" name='google' /><Text style={buttonText}> Google</Text></Button>
           </View>
-          <Button block style={facebookButton} onPress={() => {this.facebookSignIn()}}><MyCon size={20} color="#EEEEEE" name='facebook' /><Text style={buttonText}> Facebook</Text></Button>
-          <Button block style={twitterButton} onPress={() => {this.twitterSignIn()}}><MyCon size={20} color="#EEEEEE" name='twitter' /><Text style={buttonText}> Twitter</Text></Button>
-          <Button block style={googleButton} onPress={() => {this.googleSignIn()}}><MyCon size={20} color="#EEEEEE" name='google' /><Text style={buttonText}> Google</Text></Button>
-          <Text style={resetText} onPress={() => { this.showReset(!this.state.resetModal)}}>Lost Password?</Text>
         </View>
-        <Modal animationType={"slide"} transparent={false} visible={this.state.resetModal}  onRequestClose={() => {}}>
-          <View style={backgroundContainer}>
-            <Image style={logoContainer} source={require('../Images/CapThisLogo.png')} />
-            <Text style={resetText}>Confirm your E-mail and we will send you a temporary password.</Text>
-
-            <View style={inputContainer}>
-              <InputGroup borderType='underline' >
-                <Icon name='md-mail' style={iconStyle}/>
-                <Input placeholder='E-Mail' style={inputStyle} value={this.state.reset} onChange={this.handleReset}/>
-              </InputGroup>
-
-              <Button block style={buttonStyleOne} onPress={() => this.resetPassword()}><Text>Confirm</Text></Button>
-              <Button block style={buttonStyleTwo} textStyle={textStyleTwo} onPress={() => { this.showReset(!this.state.resetModal)}}><Text>Cancel</Text></Button>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
     )
   }

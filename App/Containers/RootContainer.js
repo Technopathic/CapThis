@@ -40,6 +40,7 @@ class RootContainer extends Component {
     }
   };
 
+
   setNavigation = (id) => {
     this.setState({selectedIndex: id});
   }

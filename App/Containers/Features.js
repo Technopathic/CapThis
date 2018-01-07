@@ -1,11 +1,12 @@
 // @flow
 
 import React from 'react'
-import { ScrollView, Image, StatusBar, View, AsyncStorage, Dimensions, Share, TouchableHighlight, FlatList } from 'react-native'
+import { ScrollView, Image, StatusBar, View, AsyncStorage, Dimensions, TouchableHighlight, Modal, Share, FlatList } from 'react-native'
 import { Actions as NavigationActions } from 'react-native-router-flux'
 
-import { Container, Content, Header, Card, CardItem, Thumbnail, Text, Button, Left, Body, Right, Spinner } from 'native-base';
+import { Container, Content, Header, Thumbnail, Text, Button, Left, Body, Right, Spinner } from 'native-base';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import MIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Styles
 import styles from './Styles/FeaturesStyle'
@@ -22,7 +23,9 @@ class Features extends React.Component {
       nextPage:1,
       currentPage:0,
       lastPage:1,
-      isLoading:true
+      isLoading:true,
+      imageOpen:false,
+      activeImage:""
     };
   };
 
@@ -55,6 +58,8 @@ class Features extends React.Component {
        }.bind(this));
     });
   };
+
+  showImage = (visible, image) => { this.setState({ imageOpen: visible, activeImage: image}); }
 
   getFeature = () => {
     var nextPage = this.state.nextPage;
@@ -218,9 +223,9 @@ class Features extends React.Component {
 
   shareText = (topic) => {
     Share.share({
-      message: topic.topicBody,
-      url: 'http://brag.technopathic.me/share/'+topic.id,
-      title: topic.topicTitle
+      message: topic.caption + ":: See more on the CapThis app!",
+      url: topic.topicImg,
+      title: 'CapThis'
     }, {
       dialogTitle: 'Share this Topic',
       excludedActivityTypes: [
@@ -293,13 +298,11 @@ class Features extends React.Component {
     const followStyle = {
       flex:1,
       flexDirection:"row",
-      padding:15,
-    };
-
-    const followBox = {
-      marginRight:20,
-      flex:1,
-      flexDirection:"column",
+      paddingTop:15,
+      paddingLeft:15,
+      borderBottomWidth:1,
+      borderBottomColor:'#EEEEEE',
+      maxHeight:80,
     };
 
     const followName = {
@@ -314,10 +317,9 @@ class Features extends React.Component {
     return(
       <ScrollView horizontal={true} style={followStyle}>
         {this.state.follows.map((follow, i) => (
-          <TouchableHighlight style={followBox} key={i} onPress={() => {NavigationActions.profile({uid:follow.id})}} underlayColor='#FFFFFF'>
-            <View>
-              <Thumbnail size={80} source={{uri:follow.avatar}}/>
-              <Text style={followName}>{follow.name}</Text>
+          <TouchableHighlight style={{marginRight:20}} key={i} onPress={() => {NavigationActions.profile({uid:follow.id})}} underlayColor='#FFFFFF'>
+            <View style={{flex:1, flexDirection:'column'}}>
+              <Thumbnail size={80} source={{uri:follow.avatar}} style={{borderWidth:3, borderColor:'#ffbe39'}}/>
             </View>
           </TouchableHighlight>
         ))}
@@ -325,11 +327,123 @@ class Features extends React.Component {
     );
   }
 
+  voteTopic(id, dir) {
+    var topics = this.state.topics;
+
+    fetch('http://capthis.technopathic.me/api/voteTopic/'+id+'?token=' + this.state.token, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + this.state.token
+      },
+      body: JSON.stringify({
+        dir: dir
+      })
+    }).then(function(response) {
+        return response.json()
+    })
+    .then(function(voteRes) {
+      if(voteRes === 1)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 1;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) + 1;
+          }
+        }
+      } else if(voteRes === 2)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 0;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) - 1;
+          }
+        }
+      } else if(voteRes === 3)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 2;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) - 1;
+          }
+        }
+      } else if(voteRes === 4)
+      {
+        for(var i = 0; i < topics.length; i++)
+        {
+          if(topics[i].id === id)
+          {
+            topics[i].vote = 0;
+            topics[i].topicVotes = parseInt(topics[i].topicVotes) + 1;
+          }
+        }
+      }
+      this.setState({topics:topics})
+    }.bind(this));
+  };
+
+  setVote(topic)
+  {
+    const activeStyle = {
+      backgroundColor:"#ffbe39"
+    };
+
+    const optionStyle = {
+      flex:1,
+      flexDirection:'row',
+      justifyContent:'space-around',
+      marginTop:3
+    };
+
+    const activeIcon = {
+      fontSize:20,
+      color:'#EEEEEE'
+    };
+
+    const iconStyle = {
+      fontSize:20,
+      color:'#666666'
+    };
+
+    var upVote = <Button transparent onPress={() => this.voteTopic(topic.id, 1)}><Icon name="favorite-border" style={iconStyle}/></Button>;
+    var selectUp = <Button transparent style={activeStyle} onPress={() => this.voteTopic(topic.id, 1)}><Icon name="favorite" style={activeIcon}/></Button>;
+
+    var replies = <Button transparent onPress={() => {NavigationActions.detail({id:topic.id})}}><Icon name="chat-bubble-outline" style={iconStyle}/></Button>;
+    var share = <Button transparent onPress={() => this.shareText(topic)}><Icon name="share" style={iconStyle}/></Button>;
+
+
+    if(topic.vote === 0) {
+      return (
+        <View style={optionStyle}>
+          {upVote}{replies}{share}
+        </View>
+      );
+    } else if(topic.vote === 1) {
+      return (
+        <View style={optionStyle}>
+          {selectUp}{replies}{share}
+        </View>
+      );
+    } else if(topic.vote === 2) {
+      return (
+        <View style={optionStyle}>
+          {upVote}{replies}{share}
+        </View>
+      );
+    }
+  };
+
   renderCaption = (topic) => {
     if(topic.caption !== null)
     {
       return(
-        <View style={{flex:1, width:Dimensions.get('window').width, minHeight:40, maxHeight:280, backgroundColor:'rgba(0, 0, 0, 0.5)', alignItems:'center', justifyContent:'center', position:'absolute', bottom:50, borderTopColor:'#ffbe39', borderBottomColor:'#ffbe39'}}>
+        <View style={{flex:1, width:Dimensions.get('window').width, minHeight:40, maxHeight:280, backgroundColor:'rgba(0, 0, 0, 0.5)', alignItems:'center', justifyContent:'center', position:'absolute', bottom:50, borderTopWidth:1, borderBottomWidth:1, borderTopColor:'#ffbe39', borderBottomColor:'#ffbe39'}}>
           <Text style={{color:'#FFFFFF', padding:5, textAlign:'center'}}>{topic.caption}</Text>
         </View>
       )
@@ -407,18 +521,20 @@ class Features extends React.Component {
     };
 
     return(
-      <View style={cardStyle} key={topic.id}>
-        <View style={cardHead} onPress={() => {NavigationActions.profile({uid:topic.userID})}}>
-          <Thumbnail source={{uri:topic.avatar}} small />
+      <View style={cardStyle}>
+        <View style={cardHead}>
+          <Thumbnail source={{uri:topic.avatar}} small onPress={() => {NavigationActions.profile({uid:topic.userID})}}/>
           <View style={headerStyle}>
-            <Text style={{fontSize:14, fontFamily:'Montserrat-Regular'}}>{topic.profileName}</Text>
-            <Text note style={{fontSize:11, fontFamily:'Montserrat-Regular'}}>{topic.topicDate}</Text>
+            <Text style={{fontSize:14, fontFamily:'Montserrat-Regular'}} onPress={() => {NavigationActions.profile({uid:topic.userID})}}>{topic.profileName}</Text>
+            <Text note style={{fontSize:11, fontFamily:'Montserrat-Regular'}} onPress={() => {NavigationActions.profile({uid:topic.userID})}}>{topic.topicDate}</Text>
           </View>
         </View>
-        <View style={cardImage} onPress={() => {NavigationActions.detail({id:topic.id})}}>
-          <Image style={{ flex:1, width:Dimensions.get('window').width, height:300 }} resizeMode='cover' source={{uri:topic.topicThumbnail}} />
-          {this.renderCaption(topic)}
-        </View>
+        <TouchableHighlight onPress={() => {this.showImage(true, topic.topicImg)}}>
+          <View style={cardImage}>
+            <Image style={{ flex:1, width:Dimensions.get('window').width, height:300 }} resizeMode='cover' source={{uri:topic.topicThumbnail}}/>
+            {this.renderCaption(topic)}
+          </View>
+        </TouchableHighlight>
         <View style={{paddingLeft:10, paddingRight:10}}>
           <Text style={smallText} onPress={() => {NavigationActions.detail({id:topic.id})}}>
             {topic.topicVotes} Likes &middot; {topic.topicReplies} Replies
@@ -429,6 +545,34 @@ class Features extends React.Component {
         </View>
       </View>
     )
+  }
+
+  shareText = (topic) => {
+    Share.share({
+      message: topic.caption + ":: See more on the CapThis app!",
+      url: topic.topicImg,
+      title: 'CapThis'
+    }, {
+      dialogTitle: 'Share this Topic',
+      excludedActivityTypes: [
+        'com.apple.UIKit.activity.PostToTwitter'
+      ],
+      tintColor: 'green'
+    })
+    .then(this.showResult)
+    .catch((error) => this.setState({result: 'error: ' + error.message}));
+  };
+
+  showResult = (result) => {
+    if (result.action === Share.sharedAction) {
+     if (result.activityType) {
+       this.setState({result: 'shared with an activityType: ' + result.activityType});
+     } else {
+       this.setState({result: 'shared'});
+     }
+    } else if (result.action === Share.dismissedAction) {
+     this.setState({result: 'dismissed'});
+    }
   }
 
   render () {
@@ -473,7 +617,6 @@ class Features extends React.Component {
           </Header>
           {this.renderSuggests()}
           <FlatList
-            style={{borderTopWidth:1, borderTopColor:'#EEEEEE'}}
             data={this.state.topics}
             keyExtractor={(topic, index) => index}
             renderItem={this.renderTopics}
@@ -485,6 +628,11 @@ class Features extends React.Component {
             {this.noFeeds()}
             {this.renderEnd()}
           </Content>
+          <Modal animationType={"slide"} transparent={false} visible={this.state.imageOpen}  onRequestClose={() => {}}>
+            <TouchableHighlight style={{flex:1, minWidth:Dimensions.get('window').width, minHeight:Dimensions.get('window').height}} onPress={() => {this.showImage(false,"")}}>
+              <Image style={{ flex:1, minWidth:Dimensions.get('window').width }} resizeMode='cover' source={{uri:this.state.activeImage}}/>
+            </TouchableHighlight>
+          </Modal>
         </Container>
       )
     }

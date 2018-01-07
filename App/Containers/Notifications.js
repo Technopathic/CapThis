@@ -4,7 +4,7 @@ import React from 'react'
 import { ScrollView, StatusBar, AsyncStorage, View, Image, Dimensions } from 'react-native'
 import { Actions as NavigationActions } from 'react-native-router-flux'
 
-import { Container, Header, Content, List, ListItem, Text, Button, Right, Left, Body, Tab, Tabs, Thumbnail, Toast, Spinner} from 'native-base'
+import { Container, Header, Content, List, ListItem, Text, Button, Right, Left, Body, Thumbnail, Toast, Spinner} from 'native-base'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 // Styles

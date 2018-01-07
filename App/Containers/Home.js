@@ -1,12 +1,14 @@
 // @flow
 
 import React, { Component } from 'react'
-import { ScrollView, StatusBar, Image, View, AsyncStorage, Dimensions, Modal, Share, FlatList } from 'react-native'
+import { ScrollView, StatusBar, Image, View, AsyncStorage, Dimensions, TouchableHighlight, Modal, Share, FlatList, Navigator } from 'react-native'
 import { Actions as NavigationActions } from 'react-native-router-flux'
 
-import { Header, Container, Content, Card, CardItem, Left, Body, Right, Thumbnail, Text, Button, Footer, List, ListItem, Spinner} from 'native-base';
+import { Header, Container, Content, Left, Body, Right, Thumbnail, Text, Button, Footer, List, ListItem, Spinner} from 'native-base';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import OneSignal from 'react-native-onesignal';
 
 // Styles
 import styles from './Styles/HomeStyle'
@@ -22,6 +24,8 @@ export default class Home extends React.Component {
       lastPage:1,
       isLoading:true,
       result:"",
+      imageOpen:false,
+      activeImage:""
     };
   };
 
@@ -34,6 +38,12 @@ export default class Home extends React.Component {
       this.getTopics();
     });
   };
+
+  componentWillUnmount() {
+    OneSignal.removeEventListener('ids');
+  }
+
+  showImage = (visible, image) => { this.setState({ imageOpen: visible, activeImage: image}); }
 
   getTopics = () => {
     var nextPage = this.state.nextPage;
@@ -50,7 +60,10 @@ export default class Home extends React.Component {
        })
        .then(function(json) {
         if(json.error) {
-          NavigationActions.signin();
+          OneSignal.addEventListener('ids', function(device) {
+            AsyncStorage.setItem('uuid', device.userId);
+            NavigationActions.signin();
+          })
         }
         else {
           if(json.current_page !== json.last_page)
@@ -210,9 +223,9 @@ export default class Home extends React.Component {
 
  shareText = (topic) => {
    Share.share({
-     message: topic.topicBody,
-     url: 'http://brag.technopathic.me/share/'+topic.id,
-     title: topic.topicTitle
+     message: topic.caption + ":: See more on the CapThis app!",
+     url: topic.topicImg,
+     title: 'CapThis'
    }, {
      dialogTitle: 'Share this Topic',
      excludedActivityTypes: [
@@ -240,7 +253,7 @@ export default class Home extends React.Component {
     if(topic.caption !== null)
     {
       return(
-        <View style={{flex:1, width:Dimensions.get('window').width, minHeight:40, maxHeight:280, backgroundColor:'rgba(0, 0, 0, 0.5)', alignItems:'center', justifyContent:'center', position:'absolute', bottom:50, borderTopColor:'#ffbe39', borderBottomColor:'#ffbe39'}}>
+        <View style={{flex:1, width:Dimensions.get('window').width, minHeight:40, maxHeight:280, backgroundColor:'rgba(0, 0, 0, 0.5)', alignItems:'center', justifyContent:'center', position:'absolute', bottom:50, borderTopWidth:1, borderBottomWidth:1, borderTopColor:'#ffbe39', borderBottomColor:'#ffbe39'}}>
           <Text style={{color:'#FFFFFF', padding:5, textAlign:'center'}}>{topic.caption}</Text>
         </View>
       )
@@ -326,10 +339,12 @@ export default class Home extends React.Component {
             <Text note style={{fontSize:11, fontFamily:'Montserrat-Regular'}} onPress={() => {NavigationActions.profile({uid:topic.userID})}}>{topic.topicDate}</Text>
           </View>
         </View>
-        <View style={cardImage} onPress={() => {NavigationActions.detail({id:topic.id})}}>
-          <Image style={{ flex:1, width:Dimensions.get('window').width, height:300 }} resizeMode='cover' source={{uri:topic.topicThumbnail}} />
-          {this.renderCaption(topic)}
-        </View>
+        <TouchableHighlight onPress={() => {this.showImage(true, topic.topicImg)}}>
+          <View style={cardImage}>
+            <Image style={{ flex:1, width:Dimensions.get('window').width, height:300 }} resizeMode='cover' source={{uri:topic.topicThumbnail}}/>
+            {this.renderCaption(topic)}
+          </View>
+        </TouchableHighlight>
         <View style={{paddingLeft:10, paddingRight:10}}>
           <Text style={smallText} onPress={() => {NavigationActions.detail({id:topic.id})}}>
             {topic.topicVotes} Likes &middot; {topic.topicReplies} Replies
@@ -402,6 +417,11 @@ export default class Home extends React.Component {
             <Content>
               {this.renderEnd()}
             </Content>
+            <Modal animationType={"slide"} transparent={false} visible={this.state.imageOpen}  onRequestClose={() => {}}>
+              <TouchableHighlight style={{flex:1, minWidth:Dimensions.get('window').width, minHeight:Dimensions.get('window').height}} onPress={() => {this.showImage(false,"")}}>
+                <Image style={{ flex:1, minWidth:Dimensions.get('window').width }} resizeMode='cover' source={{uri:this.state.activeImage}}/>
+              </TouchableHighlight>
+            </Modal>
           </Container>
       )
     }

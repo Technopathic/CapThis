@@ -235,19 +235,19 @@ class Detail extends React.Component {
         }
         else if(json === 1)
         {
-          _this.showDelete(!this.state.deleteModal)
+          _this.showDelete(!_this.state.deleteModal)
           _this.showToast('Topic was deleted.');
-          setTimeout(function(){NavigationActions.root()}, 2000);
+          setTimeout(function(){NavigationActions.root({refresh: {index:0}})}, 2000);
         }
       }
     });
   };
 
-  reportTopic(id)
+  reportTopic()
   {
     var _this = this;
 
-    fetch('http://capthis.technopathic.me/api/reportTopic/'+id+'?token=' + this.state.token, {
+    fetch('http://capthis.technopathic.me/api/reportTopic/'+this.props.id+'?token=' + this.state.token, {
       method: 'POST',
       headers:{
         'Authorization': 'Bearer ' + this.state.token
@@ -267,23 +267,18 @@ class Detail extends React.Component {
         }
         else if(json === 1)
         {
-          _this.showReport(!this.state.reportModal);
+          _this.showReport(!_this.state.reportModal);
           _this.showToast('Topic was reported.');
-        }
-        else if(json === 2)
-        {
-          _this.showReport(!this.state.reportModal);
-          _this.showToast('You cannot report yourself.');
         }
       }
     });
   };
 
-  unReportTopic(id)
+  unReportTopic()
   {
     var _this = this;
 
-    fetch('http://capthis.technopathic.me/api/unReportTopic/'+id+'?token=' + this.state.token, {
+    fetch('http://capthis.technopathic.me/api/unReportTopic/'+this.props.id+'?token=' + this.state.token, {
       method: 'POST',
       headers:{
         'Authorization': 'Bearer ' + this.state.token
@@ -332,7 +327,7 @@ class Detail extends React.Component {
         }
         else if(json === 1)
         {
-          _this.showReplyDelete(!this.state.deleteReplyModal);
+          _this.showReplyDelete(!_this.state.deleteReplyModal);
           _this.showToast('Reply was deleted.');
         }
       }
@@ -362,23 +357,23 @@ class Detail extends React.Component {
         }
         else if(json === 1)
         {
-          _this.showReplyReport(!this.state.reportReplyModal);
+          _this.showReplyReport(!_this.state.reportReplyModal);
           _this.showToast('Reply was reported.');
         }
         else if(json === 2)
         {
-          _this.showReplyReport(!this.state.reportReplyModal);
+          _this.showReplyReport(!_this.state.reportReplyModal);
           _this.showToast('You cannot report yourself.');
         }
       }
     });
   };
 
-  unReportReply(id)
+  unReportReply()
   {
     var _this = this;
 
-    fetch('http://capthis.technopathic.me/api/unReportReply/'+id+'?token=' + this.state.token, {
+    fetch('http://capthis.technopathic.me/api/unReportReply/'+this.state.selectReply+'?token=' + this.state.token, {
       method: 'POST',
       headers:{
         'Authorization': 'Bearer ' + this.state.token
@@ -398,7 +393,7 @@ class Detail extends React.Component {
         }
         else if(json === 1)
         {
-          _this.showReplyReport(!this.state.reportReplyModal);
+          _this.showReplyReport(!_this.state.reportReplyModal);
           _this.showToast('Reply was cleared.');
         }
       }
@@ -416,7 +411,7 @@ class Detail extends React.Component {
   }
 
   optionReplyButtons = () => {
-    var options = ['User Profile', 'Report'];
+    var options = ['Profile', 'Report'];
     if(this.state.user.user.role == 1)
     {
       options.push('Delete');
@@ -765,7 +760,7 @@ class Detail extends React.Component {
             <View style={{padding:15}}>
               <Text style={{fontFamily:'Lato-Regular', fontSize:14, color:'#555555'}}>Are you sure you want to report this reply?</Text>
 
-              <Button block style={buttonStyleOne} onPress={() => this.reportReply()}><Text>Confirm</Text></Button>
+              <Button block style={buttonStyleOne} onPress={() => this.reportReply(this.state.selectReply)}><Text>Confirm</Text></Button>
               <Button block style={buttonStyleTwo} textStyle={styles.textStyleTwo} onPress={() => { this.showReplyReport(!this.state.reportReplyModal)}}><Text>Cancel</Text></Button>
             </View>
           </Modal>
@@ -774,7 +769,7 @@ class Detail extends React.Component {
             <View style={{padding:15}}>
               <Text style={{fontFamily:'Lato-Regular', fontSize:14, color:'#555555'}}>Are you sure you want to delete this reply?</Text>
 
-              <Button block style={buttonStyleOne} onPress={() => this.deleteReply()}><Text>Confirm</Text></Button>
+              <Button block style={buttonStyleOne} onPress={() => this.deleteReply(this.state.selectReply)}><Text>Confirm</Text></Button>
               <Button block style={buttonStyleTwo} textStyle={styles.textStyleTwo} onPress={() => { this.showReplyDelete(!this.state.deleteReplyModal)}}><Text>Cancel</Text></Button>
             </View>
           </Modal>

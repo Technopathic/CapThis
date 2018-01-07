@@ -113,7 +113,7 @@ class Settings extends React.Component {
   signOut = () => {
     AsyncStorage.removeItem("token");
     AsyncStorage.removeItem("user");
-    this.showToast('Good-Bye!.');
+    this.showToast('Good-Bye!');
     NavigationActions.signin();
   };
 
@@ -285,13 +285,9 @@ class Settings extends React.Component {
                 <Text style={settingTitle}>Show Notifcations on Mentions</Text>
                 <Switch onValueChange={(value) => this.setState({notiMention: value}, function(){this.updateSettings();}) } value={this.state.notiMention} />
               </ListItem>
-              <ListItem style={inputRowTwo}>
-                <Text style={settingTitle}>Private Profile</Text>
-                <Switch onValueChange={(value) => this.setState({profPrivate: value}, function(){this.updateSettings();}) } value={this.state.profPrivate} />
-              </ListItem>
             </List>
             <List>
-              <ListItem style={inputRowTwo} onPress={() => this.getWebsite('http://capthis.technopathic.me')}>
+              <ListItem style={inputRowTwo} onPress={() => this.getWebsite('http://technopathic.me/capthis')}>
                 <Text style={settingTitle}>Website</Text>
               </ListItem>
               <ListItem style={inputRowTwo} onPress={() => this.getWebsite('http://capthis.technopathic.me/capthis-privacy.html')}>
