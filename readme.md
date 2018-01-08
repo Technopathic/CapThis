@@ -1,4 +1,4 @@
-# CapThis
+![Banner](https://technopathic.me/storage/capthisbanner.png)
 
 Making the comment section the best part of an app!
 
@@ -6,7 +6,11 @@ Discover funny pictures and add your own interesting captions to them. You can e
 
 ## Download
 
+[Android](https://play.google.com/store/apps/details?id=com.capthis)
+
 ## Screenshots
+
+![Screenshots](https://technopathic.me/storage/githubscreenshot.png)
 
 ## Requirements
 Before you get started developing with CapThis, ensure you have the following:
