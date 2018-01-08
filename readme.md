@@ -1,4 +1,4 @@
-![Banner](https://technopathic.me/storage/capthisbanner.png)
+![Banner](https://technopathic.me/storage/capthisbanner2.png)
 
 Making the comment section the best part of an app!
 
@@ -7,6 +7,7 @@ Discover funny pictures and add your own interesting captions to them. You can e
 ## Download
 
 [Android](https://play.google.com/store/apps/details?id=com.capthis)
+iOS - Coming Soon
 
 ## Screenshots
 
@@ -52,7 +53,7 @@ php artisan serve --host=127.0.0.1 --port=8000
 ```
 
 ## Copyright / License
-Copyright 2017 Technopathic
+Copyright 2018 Technopathic
 Licensed under the GNU General Public License Version 3.0 (or later).
 
 ## Dedication
