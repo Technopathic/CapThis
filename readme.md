@@ -7,7 +7,8 @@ Discover funny pictures and add your own interesting captions to them. You can e
 ## Download
 
 [Android](https://play.google.com/store/apps/details?id=com.capthis)
-iOS - Coming Soon
+
+[iOS](https://itunes.apple.com/us/app/capthis/id1332531858?mt=8)
 
 ## Screenshots
 
