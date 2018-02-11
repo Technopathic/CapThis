@@ -25,7 +25,8 @@ export default class Home extends React.Component {
       isLoading:true,
       result:"",
       imageOpen:false,
-      activeImage:""
+      activeImage:"",
+      imageLoading:false
     };
   };
 
@@ -39,11 +40,20 @@ export default class Home extends React.Component {
     });
   };
 
-  componentWillUnmount() {
-    OneSignal.removeEventListener('ids');
-  }
-
   showImage = (visible, image) => { this.setState({ imageOpen: visible, activeImage: image}); }
+
+  checkID = () => {
+    OneSignal.getPermissionSubscriptionState((device) => {
+      if(device.userId != null) {
+        AsyncStorage.setItem('uuid', device.userId)
+        .then(() => {
+          NavigationActions.signin();
+        })
+      } else {
+        this.checkID();
+      }
+    });
+  }
 
   getTopics = () => {
     var nextPage = this.state.nextPage;
@@ -60,10 +70,7 @@ export default class Home extends React.Component {
        })
        .then(function(json) {
         if(json.error) {
-          OneSignal.addEventListener('ids', function(device) {
-            AsyncStorage.setItem('uuid', device.userId);
-            NavigationActions.signin();
-          })
+          this.checkID();
         }
         else {
           if(json.current_page !== json.last_page)
@@ -357,6 +364,24 @@ export default class Home extends React.Component {
     )
   }
 
+  renderLoading = () => {
+    const spinnerStyle = {
+      flex:1,
+      height:Dimensions.get('window').height,
+      justifyContent:'center',
+      alignItems:'center'
+    }
+
+    if(this.state.imageLoading === true) {
+      return(
+        <View style={spinnerStyle}>
+          <StatusBar backgroundColor="#ffbe39" barStyle="dark-content" />
+          <Spinner color='#ffbe39'/>
+        </View>
+      )
+    }
+  }
+
 
 
   render () {
@@ -419,8 +444,15 @@ export default class Home extends React.Component {
             </Content>
             <Modal animationType={"slide"} transparent={false} visible={this.state.imageOpen}  onRequestClose={() => {}}>
               <TouchableHighlight style={{flex:1, minWidth:Dimensions.get('window').width, minHeight:Dimensions.get('window').height}} onPress={() => {this.showImage(false,"")}}>
-                <Image style={{ flex:1, minWidth:Dimensions.get('window').width }} resizeMode='cover' source={{uri:this.state.activeImage}}/>
+                <Image
+                  style={{ flex:1, minWidth:Dimensions.get('window').width }}
+                  resizeMode='cover'
+                  source={{uri:this.state.activeImage}}
+                  onLoadStart={() => this.setState({imageLoading:true}) }
+                  onLoadEnd={() => this.setState({imageLoading:false}) }
+                />
               </TouchableHighlight>
+              {this.renderLoading()}
             </Modal>
           </Container>
       )
